@@ -31,7 +31,7 @@ Cb
 Vocal
 ```
 
-Which should end up with the following takes visible in Pyramix, given the "My-Song" name for the takes:
+Which should end up with the following takes visible in Pyramix, given the `My-Song` name for the takes:
 
 ```
 My-Song_001
@@ -67,4 +67,4 @@ The script requires a unixy environment to run (WSL/WSL2/Linux/macOS) and bash a
 Usage: ./protools-to-pyramix.sh <MAPFILE> <NO_OF_TAKES> <SRC_DIR> <DST_DIR> <NAME> [yes]
 ```
 
-Where `<MAPFILE>` is the above mentions mapping-file, `<NO_OF_TAKES>` is the number of takes in the original PT session, `<SRC_DIR>` and `<DST_DIR>` are self-explanatory, the final optional `yes` argument is required to actually perform the action, without it the script will perform a dry-run and only print the actions it would do, so that you can visually inspect the 'mv' commands and see if everything looks legit.
+Where `<MAPFILE>` is the above mentions mapping-file, `<NO_OF_TAKES>` is the number of takes in the original PT session, `<SRC_DIR>` and `<DST_DIR>` are self-explanatory, `NAME` is the song/take name and the final optional `yes` argument is required to actually perform the action, without it the script will perform a dry-run and only print the actions it would do, so that you can visually inspect the 'mv' commands and see if everything looks legit.
