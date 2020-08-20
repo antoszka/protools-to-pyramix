@@ -22,7 +22,7 @@ There are four takes (01 to 04) recorded across four tracks (Cb, Piano-L, Piano-
 
 To translate this into Pyramix, we need to add a "take name" for the takes and a mapping between Protools track names, to Pyramix track number in a multitrack take.
 
-For this file I would create the following mapping file (tracks 1 & 2 for the piano, track 3 for Cb and track 4 for Vocal, or any other order we want):
+For this particular sample session I could create a following mapping file (tracks 1 & 2 for the piano, track 3 for Cb and track 4 for Vocal, or any other order we want):
 
 ```
 Piano-L
