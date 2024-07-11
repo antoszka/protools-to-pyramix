@@ -1,35 +1,9 @@
 # protools-to-pyramix
-A simple Protools to Pyramix session media name converter
+A simple Protools to Pyramix session media name converter.
 
-This is a rather trivial bash script that I decided to write when yet again confronted with migrating my ugly ProTools sessions into Pyramix.
+For the script to be effective the recording session in Pro Tools™ has to be conducted in a certain way and there are certain limitations, at least in its current state reflecting my actual production needs.
 
-As we well know naming takes in ProTools is shit, but as long as you keep some discipline this script will help you migrate your ProTools mess of wav files into neatly grouped takes in Pyramix.
-
-There's a number of assumptions here that you'll see when I explain the working of the script, feel free to modify/pull request if you have better ideas how to handle different scenarios.
-
-I'm assuming a trivial "rectangular" session structure, where we're dealing with a single "piece" and identical track structure for each take.
-
-In such case, let's say we have the following WAV file structure in ProTools:
-
-```
-Cb_01.wav       Cb_02.wav       Cb_03.wav       Cb_04.wav
-Piano-L_01.wav  Piano-L_02.wav  Piano-L_03.wav  Piano-L_04.wav
-Piano-R_01.wav  Piano-R_02.wav  Piano-R_03.wav  Piano-R_04.wav
-Vocal_01.wav    Vocal_02.wav    Vocal_03.wav    Vocal_04.wav
-```
-
-There are four takes (01 to 04) recorded across four tracks (Cb, Piano-L, Piano-R, Vocal)
-
-To translate this into Pyramix, we need to add a "take name" for the takes and a mapping between Protools track names, to Pyramix track number in a multitrack take.
-
-For this particular sample session I could create a following mapping file (tracks 1 & 2 for the piano, track 3 for Cb and track 4 for Vocal, or any other order we want):
-
-```
-Piano-L
-Piano-R
-Cb
-Vocal
-```
+1. bla bla
 
 Which should end up with the following takes visible in Pyramix, given the `My-Song` name for the takes:
 
