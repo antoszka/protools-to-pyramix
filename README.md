@@ -1,9 +1,8 @@
-# protools-to-pyramix
-A trivial Protools to Pyramix session media name converter.
+# A trivial Protools to Pyramix session media name converter.
 
 For the script to be effective the recording session in Pro Tools™ has to be conducted in a certain way and there are certain limitations, at least in its current state reflecting my actual (mostly classical) production needs.
 
-1. Assumptions these scripts make
+## Assumptions these scripts make
 
 For a typical classical production I'm making the following assumptions:
 
@@ -21,7 +20,7 @@ For a typical classical production I'm making the following assumptions:
 
 * A limitation of the current version of the script requires that all tracks in the recording session are either mono (multi-mono) or stereo (multi-stereo). Please do not mix mono and stereo tracks, pleae do not multi-channel tracks for now. The script has a few variants depending whether your source material is recorded in multi-mono, multi-stereo, of "PT fake stereo" files using the "L/R" naming convention. Currently you need to manually choose the proper version of the script.
 
-2. Pro Tools™ track naming
+## Pro Tools™ track naming
 
 Keeping the above assumptions in mind, please name your tracks in a PT session the following way initially:
 
@@ -59,7 +58,7 @@ When reviewing previous takes for reference of for the musicians during your
 recording session it's super-easy to quickly jump/scroll across your recorded
 takes by holding `shift-up` or `shift-down`.
 
-3. Running the script
+## Running the script
 
 The script requires a unixy environment to run (WSL/WSL2/Linux/macOS) and bash is used the following way:
 
