@@ -1,6 +1,6 @@
 # A trivial Protools to Pyramix session media name converter.
 
-For the script to be effective the recording session in Pro Tools™ has to be conducted in a certain way and there are certain limitations, at least in its current state reflecting my actual (mostly classical) production needs.
+For the script to be effective the recording session in Pro Tools™ has to be conducted in a certain way and there are certain limitations, at least in its current state reflecting my current (mostly classical) production needs.
 
 ## Assumptions these scripts make
 
