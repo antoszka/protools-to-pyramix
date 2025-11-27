@@ -1,4 +1,4 @@
-# A trivial Protools to Pyramix session media name converter.
+# A somewhat trivial Protools to Pyramix session media name converter.
 
 For the script to be effective the recording session in Pro Tools™ has to be conducted in a certain way and there are certain limitations, at least in its current state reflecting my current (mostly classical) production needs.
 
@@ -18,7 +18,7 @@ For a typical classical production I'm making the following assumptions:
   * 05 — Concerto 2: mvt 2.
   * 06 — Concerto 2: mvt 3.
 
-* A limitation of the current version of the script requires that all tracks in the recording session are either mono (multi-mono) or stereo (multi-stereo). Please do not mix mono and stereo tracks, pleae do not multi-channel tracks for now. The script has a few variants depending whether your source material is recorded in multi-mono, multi-stereo, of "PT fake stereo" files using the "L/R" naming convention. Currently you need to manually choose the proper version of the script.
+* The script has been updated to support any combination of stereo (interlaved) and mono tracks gracefully. At the moment there's still a separate version of the script for sessions with non interleaved "fake stereo" files (named with a trailing ".L" and ".R", but this won't be supported further, please make sure you record interleaved stereo tracks in your session).
 
 ## Pro Tools™ track naming
 
@@ -47,9 +47,9 @@ you're currently recording.
 The tracks headers (and files) will be named as such:
 
 ```
-01-01.03
-01-02.03
-01-03.03
+01-01.03_03
+01-02.03_03
+01-03.03_03
       |
       +-> current take number
 ```
