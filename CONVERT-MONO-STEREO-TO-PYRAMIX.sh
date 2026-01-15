@@ -47,7 +47,9 @@ for piece in $(ls -1 "${SRCDIR}" | cut -d- -f1 | sort -u); do
       for src in ${piece}-${track}.*_*.wav; do
 	     
         # CHECK NUMBER OF CHANNELS
-        CHANNELS=$(ffmpeg -i "${src}" 2>&1 | grep '^  Stream ' | grep -o '[1,2] channels' | cut -d' ' -f1)
+	CHANNELS=$(ffmpeg -i "${src}" 2>&1 | grep '^  Stream ' | egrep -o '([1,2] channels|mono|stereo)' | cut -d' ' -f1)
+	CHANNELS=${CHANNELS/mono/1}
+	CHANNELS=${CHANNELS/stereo/2}
   
         ### CASE FOR MONO FILES
         if [[ $CHANNELS == "1" ]]; then
