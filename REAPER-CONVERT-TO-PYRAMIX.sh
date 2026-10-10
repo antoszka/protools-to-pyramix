@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -u
+
 ### naming structure (sample source files)
 #
 # blah_mvt_1-1-03-052.wav
@@ -10,8 +12,47 @@
 # +--------------------------> piece name
 #
 # OUTPUT: ${piece}_take_${take}_##${lane}##_.wav
+#
+# USAGE: REAPER-CONVERT-TO-PYRAMIX.sh SRCDIR DSTDIR [doit|doitmv]
 
-UNIX_START=$(date +%s)
+SECONDS=0
+
+human_duration() {
+    local t=$1
+    local d=$(( t / 86400 ))
+    local h=$(( t % 86400 / 3600 ))
+    local m=$(( t % 3600 / 60 ))
+    local s=$(( t % 60 ))
+    local parts=()
+
+    plural() { if (( $1 == 1 )); then echo "$1 $2"; else echo "$1 ${2}s"; fi; }
+
+    (( d > 0 )) && parts+=("$(plural "$d" day)")
+    (( h > 0 )) && parts+=("$(plural "$h" hour)")
+    (( m > 0 )) && parts+=("$(plural "$m" minute)")
+    (( s > 0 || ${#parts[@]} == 0 )) && parts+=("$(plural "$s" second)")
+
+    local n=${#parts[@]}
+    if (( n == 1 )); then
+        echo "${parts[0]}"
+    else
+        local head
+        head=$(printf '%s, ' "${parts[@]:0:n-1}")
+        echo "${head%, } and ${parts[n-1]}"
+    fi
+}
+
+# Check arguments (with set -u, a missing $1/$2 would otherwise abort with "unbound variable")
+if (( $# < 2 )); then
+    echo "Usage: $(basename "$0") SRCDIR DSTDIR [doit|doitmv]"
+    exit 1
+fi
+
+# Optional third argument; empty means dry run
+MODE=${3:-}
+
+# Report total time on any exit (normal end, error exit, Ctrl-C)
+trap 'echo "Conversion took $(human_duration "$SECONDS")."' EXIT
 
 SRCDIR=$(realpath "$1")
 DSTDIR=$(realpath "$2")
@@ -40,106 +81,78 @@ cd "${SRCDIR}"
 ### MAIN PIECE LOOP
 for piece in $(ls -1 "${SRCDIR}" | sed -r 's/(.*)-([0-9]+)-([0-9]+)\.wav/\1/' | sort -u); do
 
-  ## reset track number to one
-  tracknoraw=1
+    ## reset track number to one
+    tracknoraw=1
 
-  ### MAIN REAPER TRACK LOOP
-  for track in $(ls -1 "${SRCDIR}" | sed -r 's/(.*)-([0-9]+)-([0-9]+)\.wav/\2/' | sort -u); do
+    ### MAIN REAPER TRACK LOOP
+    for track in $(ls -1 "${SRCDIR}" | sed -r 's/(.*)-([0-9]+)-([0-9]+)\.wav/\2/' | sort -u); do
 
+        CHANNELS=""
 
-      ### MAIN REAPER SOURCEFILE LOOP
-      for src in ${piece}-${track}-*.wav; do
-	     
-        # CHECK NUMBER OF CHANNELS
-	CHANNELS=$(ffmpeg -i "${src}" 2>&1 | grep '^  Stream ' | egrep -o '([1,2] channels|mono|stereo)' | cut -d' ' -f1)
-	CHANNELS=${CHANNELS/mono/1}
-	CHANNELS=${CHANNELS/stereo/2}
-	echo "Found ${CHANNELS} channels."
-  
-        ### CASE FOR MONO FILES
-        if [[ $CHANNELS == "1" ]]; then
-          trackno=$(printf "%03d" ${tracknoraw})
-  
-	  # echo "Found mono sourcefile in '${src}'"
-          dst=$(echo "${src}" | sed -r 's/^.*-([0-9]+)\.wav$/'${piece}'_take_\1_##'${trackno}'##_.wav/')
-          if   [[ "$3" == "doit" ]];   then
-            cp -iv "${src}" "${DSTDIR}/${dst}"
-          elif [[ "$3" == "doitmv" ]]; then
-            mv -iv "${src}" "${DSTDIR}/${dst}"
-          else
-            :
-            #echo cp -iv "${src}" "${DSTDIR}/${dst}"
-            #echo -n "${track}:${trackno} "
-          fi
-        fi
-  
-        ### CASE FOR STEREO FILES
-        if [[ $CHANNELS == "2" ]]; then
-	  trackno_l=$(printf "%03d"    ${tracknoraw}     )
-	  trackno_r=$(printf "%03d" $((${tracknoraw}+1)) )
-    
-	  # echo "Found stereo sourcefile in '${src}'"
-          # Get L/R destination names
-          dst_l=$(echo "${src}" | sed -r 's/^.*-([0-9]+)\.wav$/'${piece}'_take_\1_##'${trackno_l}'##_.wav/')
-          dst_r=$(echo "${src}" | sed -r 's/^.*-([0-9]+)\.wav$/'${piece}'_take_\1_##'${trackno_r}'##_.wav/')
-    
-          # Make tmpfile holders for split src
-          src_l=$(mktemp)
-          src_r=$(mktemp)
-          mv ${src_l}{,.wav}
-          mv ${src_r}{,.wav}
-          src_l=${src_l}.wav
-          src_r=${src_r}.wav
-       
-          # Split src
-          ffmpeg -y -loglevel 8 -i "${src}" -filter_complex "channelsplit[left][right]" -map "[left]" -c:a pcm_s24le ${src_l} -map "[right]" -c:a pcm_s24le ${src_r} || { echo "Error converting ${src}; exiting..."; exit 127; }
-    
-          # copy/move the tmpfiles
-          if   [[ "$3" == "doit" ]];   then
-            echo -n "$(basename ${src}:) "; mv -fv "${src_l}" "${DSTDIR}/${dst_l}"
-            echo -n "$(basename ${src}:) "; mv -fv "${src_r}" "${DSTDIR}/${dst_r}"
-          else
-            echo REAL SRC IS: " ${src}"
-            echo WOULD MOVE L: "${src_l}" "${DSTDIR}/${dst_l}" ### DEBUG
-            echo WOULD MOVE R: "${src_r}" "${DSTDIR}/${dst_r}" ### DEBUG
-            rm -f ${src_l}
-            rm -f ${src_r}
-          fi
-        fi
+        ### MAIN REAPER SOURCEFILE LOOP
+        for src in ${piece}-${track}-*.wav; do
+
+            # CHECK NUMBER OF CHANNELS
+            CHANNELS=$(ffmpeg -i "${src}" 2>&1 | grep '^  Stream ' | egrep -o '([1,2] channels|mono|stereo)' | cut -d' ' -f1)
+            CHANNELS=${CHANNELS/mono/1}
+            CHANNELS=${CHANNELS/stereo/2}
+            echo "Found ${CHANNELS} channels."
+
+            ### CASE FOR MONO FILES
+            if [[ $CHANNELS == "1" ]]; then
+                trackno=$(printf "%03d" ${tracknoraw})
+
+                # echo "Found mono sourcefile in '${src}'"
+                dst=$(echo "${src}" | sed -r 's/^.*-([0-9]+)\.wav$/'${piece}'_take_\1_##'${trackno}'##_.wav/')
+                if   [[ "$MODE" == "doit" ]];   then
+                    cp -iv "${src}" "${DSTDIR}/${dst}"
+                elif [[ "$MODE" == "doitmv" ]]; then
+                    mv -iv "${src}" "${DSTDIR}/${dst}"
+                else
+                    :
+                    #echo cp -iv "${src}" "${DSTDIR}/${dst}"
+                    #echo -n "${track}:${trackno} "
+                fi
+            fi
+
+            ### CASE FOR STEREO FILES
+            if [[ $CHANNELS == "2" ]]; then
+                trackno_l=$(printf "%03d"    ${tracknoraw}     )
+                trackno_r=$(printf "%03d" $((${tracknoraw}+1)) )
+
+                # echo "Found stereo sourcefile in '${src}'"
+                # Get L/R destination names
+                dst_l=$(echo "${src}" | sed -r 's/^.*-([0-9]+)\.wav$/'${piece}'_take_\1_##'${trackno_l}'##_.wav/')
+                dst_r=$(echo "${src}" | sed -r 's/^.*-([0-9]+)\.wav$/'${piece}'_take_\1_##'${trackno_r}'##_.wav/')
+
+                # Make tmpfile holders for split src
+                src_l=$(mktemp)
+                src_r=$(mktemp)
+                mv ${src_l}{,.wav}
+                mv ${src_r}{,.wav}
+                src_l=${src_l}.wav
+                src_r=${src_r}.wav
+
+                # Split src
+                ffmpeg -y -loglevel 8 -i "${src}" -filter_complex "channelsplit[left][right]" -map "[left]" -c:a pcm_s24le ${src_l} -map "[right]" -c:a pcm_s24le ${src_r} || { echo "Error converting ${src}; exiting..."; exit 127; }
+
+                # copy/move the tmpfiles
+                if   [[ "$MODE" == "doit" ]];   then
+                    echo -n "$(basename ${src}:) "; mv -fv "${src_l}" "${DSTDIR}/${dst_l}"
+                    echo -n "$(basename ${src}:) "; mv -fv "${src_r}" "${DSTDIR}/${dst_r}"
+                else
+                    echo REAL SRC IS: " ${src}"
+                    echo WOULD MOVE L: "${src_l}" "${DSTDIR}/${dst_l}" ### DEBUG
+                    echo WOULD MOVE R: "${src_r}" "${DSTDIR}/${dst_r}" ### DEBUG
+                    rm -f ${src_l}
+                    rm -f ${src_r}
+                fi
+            fi
+        done
+        [[ $CHANNELS = "1" ]] && { ((tracknoraw++));                   }
+        [[ $CHANNELS = "2" ]] && { ((tracknoraw++)); ((tracknoraw++)); }
     done
-    [[ $CHANNELS = "1" ]] && { ((tracknoraw++));                   }
-    [[ $CHANNELS = "2" ]] && { ((tracknoraw++)); ((tracknoraw++)); }
-  done
 done
-  
+
 # return to original CWD
 cd "${CWD}"
-
-human_duration() {
-    local t=$1
-    local d=$(( t / 86400 ))
-    local h=$(( t % 86400 / 3600 ))
-    local m=$(( t % 3600 / 60 ))
-    local s=$(( t % 60 ))
-    local parts=()
-
-    plural() { if (( $1 == 1 )); then echo "$1 $2"; else echo "$1 ${2}s"; fi; }
-
-    (( d > 0 )) && parts+=("$(plural "$d" day)")
-    (( h > 0 )) && parts+=("$(plural "$h" hour)")
-    (( m > 0 )) && parts+=("$(plural "$m" minute)")
-    (( s > 0 || ${#parts[@]} == 0 )) && parts+=("$(plural "$s" second)")
-
-    local n=${#parts[@]}
-    if (( n == 1 )); then
-        echo "${parts[0]}"
-    else
-        local head
-        head=$(printf '%s, ' "${parts[@]:0:n-1}")
-        echo "${head%, } and ${parts[n-1]}"
-    fi
-}
-
-UNIX_END=$(date +%s)
-
-echo "Conversion took $(human_duration $(( end - start )))."
