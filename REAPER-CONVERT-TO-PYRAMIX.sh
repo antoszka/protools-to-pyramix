@@ -11,6 +11,8 @@
 #
 # OUTPUT: ${piece}_take_${take}_##${lane}##_.wav
 
+UNIX_START=$(date +%s)
+
 SRCDIR=$(realpath "$1")
 DSTDIR=$(realpath "$2")
 
@@ -22,11 +24,13 @@ CWD="$(pwd)"
 
 # show some debug:
 echo "Found the following pieces:"
-ls -1 "${SRCDIR}" | cut -d- -f1 | sort -u
+#ls -1 "${SRCDIR}" | cut -d- -f1 | sort -u
+ls -1 "${SRCDIR}" | sed -r 's/(.*)-([0-9]+)-([0-9]+)\.wav/\1/' | sort -u
 echo
 
 echo "Found the following tracks:"
-ls -1 "${SRCDIR}" | cut -d- -f2 | sort -u
+#ls -1 "${SRCDIR}" | cut -d- -f2 | sort -u
+ls -1 "${SRCDIR}" | sed -r 's/(.*)-([0-9]+)-([0-9]+)\.wav/\2/' | sort -u
 echo
 
 # Change directory to SRCDIR
@@ -34,13 +38,13 @@ echo "Changing directory to ${SRCDIR}."
 cd "${SRCDIR}"
 
 ### MAIN PIECE LOOP
-for piece in $(ls -1 "${SRCDIR}" | cut -d- -f1 | sort -u); do
+for piece in $(ls -1 "${SRCDIR}" | sed -r 's/(.*)-([0-9]+)-([0-9]+)\.wav/\1/' | sort -u); do
 
   ## reset track number to one
   tracknoraw=1
 
   ### MAIN REAPER TRACK LOOP
-  for track in $(ls -1 "${SRCDIR}" | cut -d- -f2 | sort -u); do
+  for track in $(ls -1 "${SRCDIR}" | sed -r 's/(.*)-([0-9]+)-([0-9]+)\.wav/\2/' | sort -u); do
 
 
       ### MAIN REAPER SOURCEFILE LOOP
@@ -50,6 +54,7 @@ for piece in $(ls -1 "${SRCDIR}" | cut -d- -f1 | sort -u); do
 	CHANNELS=$(ffmpeg -i "${src}" 2>&1 | grep '^  Stream ' | egrep -o '([1,2] channels|mono|stereo)' | cut -d' ' -f1)
 	CHANNELS=${CHANNELS/mono/1}
 	CHANNELS=${CHANNELS/stereo/2}
+	echo "Found ${CHANNELS} channels."
   
         ### CASE FOR MONO FILES
         if [[ $CHANNELS == "1" ]]; then
@@ -109,3 +114,32 @@ done
   
 # return to original CWD
 cd "${CWD}"
+
+human_duration() {
+    local t=$1
+    local d=$(( t / 86400 ))
+    local h=$(( t % 86400 / 3600 ))
+    local m=$(( t % 3600 / 60 ))
+    local s=$(( t % 60 ))
+    local parts=()
+
+    plural() { if (( $1 == 1 )); then echo "$1 $2"; else echo "$1 ${2}s"; fi; }
+
+    (( d > 0 )) && parts+=("$(plural "$d" day)")
+    (( h > 0 )) && parts+=("$(plural "$h" hour)")
+    (( m > 0 )) && parts+=("$(plural "$m" minute)")
+    (( s > 0 || ${#parts[@]} == 0 )) && parts+=("$(plural "$s" second)")
+
+    local n=${#parts[@]}
+    if (( n == 1 )); then
+        echo "${parts[0]}"
+    else
+        local head
+        head=$(printf '%s, ' "${parts[@]:0:n-1}")
+        echo "${head%, } and ${parts[n-1]}"
+    fi
+}
+
+UNIX_END=$(date +%s)
+
+echo "Conversion took $(human_duration $(( end - start )))."
